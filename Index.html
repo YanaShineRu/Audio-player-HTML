@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Audio player</title>
+  <link rel="icon" href="default_icon.png" type="image/png">
+  <style>
+    #playerContainer {
+      text-align: center;
+    }
+
+    #progressBar {
+      width: 100%;
+      height: 40px;
+      background-color: #bbb;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      position: relative;
+    }
+
+    #progress {
+      height: 100%;
+      width: 0;
+      border-radius: 4px;
+      background-color: #4CAF50;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+    button {
+      margin: 5px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    button:hover {
+      background-color: #3d8b40;
+    }
+
+    #timer {
+      font-size: 14px;
+      color: #fff;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+  </style>
+</head>
+<body>
+  <div id="playerContainer">
+    <audio id="audioPlayer"></audio>
+    <button id="backButton">Back</button>
+    <button id="playButton">Play</button>
+    <button id="nextButton">Next</button>
+    <button id="muteButton">Mute</button>
+    <div id="progressBar">
+      <div id="progress"></div>
+      <div id="timer">0:00 / 0:00</div>
+    </div>
+  </div>
+
+  <script>
+    var playlist = [
+      "audio_file.mp3",
+      "https://zaycevfm.cdnvideo.ru/ZaycevFM_pop_256.mp3"
+    ];
+
+    var audioPlayer = document.getElementById("audioPlayer");
+    var playButton = document.getElementById("playButton");
+    var nextButton = document.getElementById("nextButton");
+    var backButton = document.getElementById("backButton");
+    var muteButton = document.getElementById("muteButton");
+    var progressBar = document.getElementById("progress");
+    var timerElement = document.getElementById("timer");
+
+    var currentTrackIndex = 0;
+    var isPlaying = false;
+    var isMuted = false;
+    var animationFrameId;
+    var pausedTime = 0;
+
+    function play() {
+      var source = playlist[currentTrackIndex];
+      if (audioPlayer.paused) {
+        if (audioPlayer.currentTime === 0) {
+          audioPlayer.src = source + "?t=" + Date.now();
+        }
+        else {
+          audioPlayer.currentTime = pausedTime;
+        }
+        audioPlayer.play();
+        isPlaying = true;
+        updatePlayPauseButton();
+        updateFavicon(true);
+        startAnimation();
+      }
+    }
+
+    function pause() {
+      audioPlayer.pause();
+      isPlaying = false;
+      pausedTime = audioPlayer.currentTime;
+      updatePlayPauseButton();
+      updateFavicon(false);
+      stopAnimation();
+    }
+
+    function next() {
+      currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+      audioPlayer.pause();
+      audioPlayer.currentTime = 0;
+      play();
+    }
+
+    function back() {
+      currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
+      audioPlayer.pause();
+      audioPlayer.currentTime = 0;
+      play();
+    }
+
+    function muteAudio() {
+      if (isMuted) {
+        audioPlayer.muted = false;
+        isMuted = false;
+        muteButton.textContent = "Mute";
+      } else {
+        audioPlayer.muted = true;
+        isMuted = true;
+        muteButton.textContent = "Unmute";
+      }
+    }
+
+    function updatePlayPauseButton() {
+      if (isPlaying) {
+        playButton.textContent = "Pause";
+      } else {
+        playButton.textContent = "Play";
+      }
+    }
+
+    function updateProgressBar() {
+      var progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+      progressBar.style.width = progress + "%";
+    }
+
+    function updateTimer() {
+      var currentTime = formatTime(audioPlayer.currentTime);
+      var duration = formatTime(audioPlayer.duration);
+      timerElement.textContent = currentTime + " / " + duration;
+    }
+
+    function formatTime(time) {
+      var minutes = Math.floor(time / 60);
+      var seconds = Math.floor(time % 60);
+      seconds = (seconds < 10) ? "0" + seconds : seconds;
+      return minutes + ":" + seconds;
+    }
+
+    function startAnimation() {
+      function animate() {
+        updateProgressBar();
+        updateTimer();
+        if (audioPlayer.ended) {
+          stopAnimation();
+          next();
+        } else {
+          animationFrameId = requestAnimationFrame(animate);
+        }
+      }
+      animate();
+    }
+
+    function stopAnimation() {
+      cancelAnimationFrame(animationFrameId);
+    }
+
+    playButton.addEventListener("click", function() {
+      if (isPlaying) {
+        pause();
+      } else {
+        play();
+      }
+    });
+
+    function updateFavicon(isPlaying) {
+      var favicon = document.querySelector("link[rel='icon']");
+      if (isPlaying) {
+        favicon.href = "play_icon.png";
+      } else {
+        favicon.href = "pause_icon.png";
+      }
+    }
+
+    nextButton.addEventListener("click", next);
+    backButton.addEventListener("click", back);
+    muteButton.addEventListener("click", muteAudio);
+  </script>
+</body>
+</html>
